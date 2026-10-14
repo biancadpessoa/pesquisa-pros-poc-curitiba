@@ -94,7 +94,7 @@ button:focus-visible,textarea:focus-visible,input:focus-visible{outline:3px soli
 /* ============ CONFIGURAÇÃO ============ */
 const ENDPOINT = "https://script.google.com/macros/s/AKfycbwbBrVkpjNnxcjdF0pR218bwZHqLpy7fVDZqoRmFgvpxK_2n2zKH32JjnRqeHyXB6fc/exec";
 const MARCA = "Madeira Serviços";
-const VERSAO = "2026-10-14";
+const VERSAO = "2026-10-14.2";   // v2: nova abertura, P45 colete, P46 condicional, P47 tamanho
 const FORMATO = "chat";
 /* ====================================== */
 const M = s => s.replace(/\{M\}/g, MARCA);
@@ -103,9 +103,9 @@ const OPC = "Opcional. Escreva do seu jeito, pode ser curto.";
 const SECOES = [
   { letra:"", titulo:"Pesquisa de Perfil dos Profissionais", desc:"",
     intro:[
-      "Olá! Queremos conhecer melhor você e a sua rotina de trabalho para melhorar a plataforma, a oferta de serviços e os benefícios para os profissionais.",
-      "Leva cerca de 15 minutos. Não existe resposta certa ou errada, e suas respostas NÃO afetam sua nota nem a oferta de serviços.",
-      "Os dados são tratados de forma confidencial, conforme a LGPD, e analisados apenas de forma agrupada."
+      "Oi! Aqui é o time da Madeira Serviços. Estamos planejando as próximas mudanças da plataforma, como benefícios, distribuição de serviços e melhorias no app, e queremos fazer isso com base na experiência de quem faz o trabalho acontecer: você. Leva cerca de 15 minutos, quase tudo de marcar. Fique tranquilo:",
+      "✔ Não existe resposta certa ou errada. Queremos sua opinião sincera.\n✔ Suas respostas não mudam sua nota nem os serviços que você recebe.\n✔ Os dados são confidenciais (LGPD) e nunca serão usados para avaliar você individualmente.",
+      "Depois da pesquisa, vamos contar para todos os profissionais o que descobrimos e o que vamos mudar."
     ],
     qs:[
       {id:"P0a", n:"", text:"Código do profissional", type:"code", req:true,
@@ -212,7 +212,16 @@ const SECOES = [
         options:["Trabalhar mais com montagem","Manter como está","Montar equipe ou empresa","Diminuir ou mudar de área"]},
       {id:"P43", n:43, text:"O que faria você deixar de trabalhar com a {M}?", type:"text", req:false, help:OPC},
       {id:"P44", n:44, text:"Se você fosse o dono da {M}, o que mudaria primeiro?", type:"text", req:false, help:OPC},
-      {id:"P45", n:45, text:"Qual tamanho de camiseta você usa?", type:"single", req:true, help:"Para o envio do seu colete.",
+      {id:"P45", n:45, text:"Você usaria o colete durante os serviços?", type:"single", req:true,
+        help:"Estamos preparando um colete de identificação da {M} para os profissionais. Com ele, o cliente reconhece na hora quem está chegando para o serviço, o que dá mais segurança e confiança para os dois lados: para o cliente, na hora de abrir a porta, e para você, que chega identificado e é recebido com mais tranquilidade. É leve e vai por cima da sua roupa.",
+        options:["Sim, usaria sempre","Usaria na maioria dos serviços","Usaria, mas preferia não","Não usaria"]}
+    ]},
+  { letra:"", titulo:"Colete", desc:"", cond: R => ["Usaria, mas preferia não","Não usaria"].includes(R.P45), qs:[
+      {id:"P46", n:46, text:"O que poderia dificultar o uso do colete no dia a dia? (marque todas)", type:"multi", req:true, other:true, shuffle:true,
+        options:["Calor","Atrapalha para trabalhar (abaixar, carregar peças)","Também trabalho para outras empresas ou plataformas","Esquecer de levar","Não gosto da aparência"]}
+    ]},
+  { letra:"", titulo:"Tamanho", desc:"", qs:[
+      {id:"P47", n:47, text:"Qual tamanho de camiseta você usa?", type:"single", req:true, help:"Usaremos para enviar o colete no tamanho certo.",
         options:["P","M","G","GG","XG"]}
     ]}
 ];
@@ -226,10 +235,11 @@ intro.intro.forEach(t => PASSOS.push({msg:t}));
 PASSOS.push({q:P0b});            // consentimento antes do código: quem recusa sai sem informar nada
 PASSOS.push({q:P0a});
 SECOES.slice(1).forEach(s => {
-  PASSOS.push({sec:`Bloco ${s.letra} · ${M(s.titulo)}`});
+  if (s.letra) PASSOS.push({sec:`Bloco ${s.letra} · ${M(s.titulo)}`});   // Colete e Tamanho não têm bloco nem descrição
   if (s.desc) PASSOS.push({msg:M(s.desc)});
-  s.qs.forEach(q => PASSOS.push({q}));
+  s.qs.forEach(q => PASSOS.push({q, cond:s.cond}));
 });
+const ativa = q => { const s = SECOES.find(x => x.qs.includes(q)); return !s.cond || s.cond(R); };
 const TOTAL_Q = PASSOS.filter(p=>p.q).length;
 
 /* ---------- estado ---------- */
@@ -368,11 +378,12 @@ function montarLinha(parcial){
   for (const q of QS){
     if (q.type==="code") continue;
     if (parcial && q.id!=="P0b") continue;
-    const v = R[q.id];
+    const v = ativa(q) ? R[q.id] : undefined;
     if (q.type==="grid"){ q.cols.forEach((c,i)=>f.push([`${q.id}_${i+1}lugar`,(v||{})[c]||""])); continue; }
     f.push([q.id, Array.isArray(v) ? v.join("; ") : (v ?? "")]);
-    if (q.other) f.push([q.id+"_outro", R[q.id+"_outro"]||""]);
+    if (q.other) f.push([q.id+"_outro", ativa(q) ? (R[q.id+"_outro"]||"") : ""]);
   }
+  if (!parcial) f.push(["P47_colete", {P:"M",M:"G",G:"GG",GG:"XG",XG:"XGG"}[R.P47] || ""]);   // uso interno: colete = camiseta +1
   f.push(["user_agent", navigator.userAgent]);
   return f;
 }
@@ -403,7 +414,8 @@ async function rodar(){
   while (pos < PASSOS.length){
     progresso();
     const p = PASSOS[pos];
-    if (p.msg){ await botDiz(esc(p.msg)); pos++; salvar(); continue; }
+    if (p.cond && !p.cond(R)){ pos++; salvar(); continue; }   // pergunta condicional que não se aplica
+    if (p.msg){ await botDiz(esc(p.msg).replace(/\n/g,"<br>")); pos++; salvar(); continue; }
     if (p.sec){ await espera(250); bolha("sec", esc(p.sec)); pos++; salvar(); continue; }
     const q = p.q;
     if (perguntado !== pos){ await botDiz(textoPergunta(q)); perguntado = pos; salvar(); }

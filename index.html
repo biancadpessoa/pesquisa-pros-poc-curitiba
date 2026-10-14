@@ -173,7 +173,7 @@ input[readonly]{background:var(--fundo); color:var(--tinta-suave)}
 // Cole aqui a URL do Web App do Apps Script (termina em /exec).
 const ENDPOINT = "https://script.google.com/macros/s/AKfycbwbBrVkpjNnxcjdF0pR218bwZHqLpy7fVDZqoRmFgvpxK_2n2zKH32JjnRqeHyXB6fc/exec";
 const MARCA = "Madeira Serviços";
-const VERSAO = "2026-10-14";
+const VERSAO = "2026-10-14.2";   // v2: nova abertura, P45 colete, P46 condicional, P47 tamanho
 /* ====================================== */
 
 const M = s => s.replace(/\{M\}/g, MARCA);
@@ -184,9 +184,9 @@ const OPC = "Opcional. Escreva do seu jeito, pode ser curto.";
 const SECOES = [
   { letra:"", titulo:"Pesquisa de Perfil dos Profissionais", desc:"",
     intro:[
-      "Olá! Queremos conhecer melhor você e a sua rotina de trabalho para melhorar a plataforma, a oferta de serviços e os benefícios para os profissionais.",
-      "Leva cerca de 15 minutos. Não existe resposta certa ou errada, e suas respostas NÃO afetam sua nota nem a oferta de serviços.",
-      "Os dados são tratados de forma confidencial, conforme a LGPD, e analisados apenas de forma agrupada."
+      "Oi! Aqui é o time da Madeira Serviços. Estamos planejando as próximas mudanças da plataforma, como benefícios, distribuição de serviços e melhorias no app, e queremos fazer isso com base na experiência de quem faz o trabalho acontecer: você. Leva cerca de 15 minutos, quase tudo de marcar. Fique tranquilo:",
+      "✔ Não existe resposta certa ou errada. Queremos sua opinião sincera.\n✔ Suas respostas não mudam sua nota nem os serviços que você recebe.\n✔ Os dados são confidenciais (LGPD) e nunca serão usados para avaliar você individualmente.",
+      "Depois da pesquisa, vamos contar para todos os profissionais o que descobrimos e o que vamos mudar."
     ],
     qs:[
       {id:"P0a", n:"", text:"Código do profissional", type:"code", req:true,
@@ -293,7 +293,16 @@ const SECOES = [
         options:["Trabalhar mais com montagem","Manter como está","Montar equipe ou empresa","Diminuir ou mudar de área"]},
       {id:"P43", n:43, text:"O que faria você deixar de trabalhar com a {M}?", type:"text", req:false, help:OPC},
       {id:"P44", n:44, text:"Se você fosse o dono da {M}, o que mudaria primeiro?", type:"text", req:false, help:OPC},
-      {id:"P45", n:45, text:"Qual tamanho de camiseta você usa?", type:"single", req:true, help:"Para o envio do seu colete.",
+      {id:"P45", n:45, text:"Você usaria o colete durante os serviços?", type:"single", req:true,
+        help:"Estamos preparando um colete de identificação da {M} para os profissionais. Com ele, o cliente reconhece na hora quem está chegando para o serviço, o que dá mais segurança e confiança para os dois lados: para o cliente, na hora de abrir a porta, e para você, que chega identificado e é recebido com mais tranquilidade. É leve e vai por cima da sua roupa.",
+        options:["Sim, usaria sempre","Usaria na maioria dos serviços","Usaria, mas preferia não","Não usaria"]}
+    ]},
+  { letra:"", titulo:"Colete", desc:"", cond: R => ["Usaria, mas preferia não","Não usaria"].includes(R.P45), qs:[
+      {id:"P46", n:46, text:"O que poderia dificultar o uso do colete no dia a dia? (marque todas)", type:"multi", req:true, other:true, shuffle:true,
+        options:["Calor","Atrapalha para trabalhar (abaixar, carregar peças)","Também trabalho para outras empresas ou plataformas","Esquecer de levar","Não gosto da aparência"]}
+    ]},
+  { letra:"", titulo:"Tamanho", desc:"", qs:[
+      {id:"P47", n:47, text:"Qual tamanho de camiseta você usa?", type:"single", req:true, help:"Usaremos para enviar o colete no tamanho certo.",
         options:["P","M","G","GG","XG"]}
     ]}
 ];
@@ -338,8 +347,10 @@ function render(){
   if (!ENDPOINT || ENDPOINT.startsWith("COLE_")) h += `<div class="aviso">Modo de teste: o endereço de envio ainda não foi configurado, então as respostas não serão gravadas.</div>`;
   if (s.letra){
     h += `<div class="cab"><div class="letra" aria-hidden="true">${s.letra}</div><div><h1>${esc(M(s.titulo))}</h1><p>${esc(M(s.desc))}</p></div></div>`;
+  } else if (s.intro){
+    h += `<div class="cab"><div><h1>${esc(M(s.titulo))}</h1></div></div><div class="intro">${s.intro.map(p=>`<p>${esc(p).replace(/\n/g,"<br>")}</p>`).join("")}</div>`;
   } else {
-    h += `<div class="cab"><div><h1>${esc(M(s.titulo))}</h1></div></div><div class="intro">${s.intro.map(p=>`<p>${esc(p)}</p>`).join("")}</div>`;
+    h += `<div class="cab"><div><h1>${esc(M(s.titulo))}</h1></div></div>`;
   }
   s.qs.forEach(q => h += renderQ(q));
   app.innerHTML = h;
@@ -472,11 +483,12 @@ function montarLinha(parcial){
   for (const s of SECOES) for (const q of s.qs){
     if (q.type==="code") continue;
     if (parcial && q.id!=="P0b") continue;
-    const v = R[q.id];
+    const v = ativa(q) ? R[q.id] : undefined;   // resposta antiga de seção que deixou de valer não vai para a planilha
     if (q.type==="grid"){ q.cols.forEach((c,i) => f.push([`${q.id}_${i+1}lugar`, (v||{})[c]||""])); continue; }
     f.push([q.id, Array.isArray(v) ? v.join("; ") : (v ?? "")]);
-    if (q.other) f.push([q.id+"_outro", R[q.id+"_outro"]||""]);
+    if (q.other) f.push([q.id+"_outro", ativa(q) ? (R[q.id+"_outro"]||"") : ""]);
   }
+  if (!parcial) f.push(["P47_colete", {P:"M",M:"G",G:"GG",GG:"XG",XG:"XGG"}[R.P47] || ""]);   // uso interno: colete = camiseta +1
   f.push(["user_agent", navigator.userAgent]);
   return f;
 }
@@ -516,9 +528,12 @@ bA.addEventListener("click", () => {
   if (!validar()) return;
   if (atual===0 && R.P0b==="Não concordo") return enviar(true);   // lógica de consentimento
   if (atual===SECOES.length-1) return enviar(false);
-  atual++; salvar(); render();
+  atual = proxima(atual, +1); salvar(); render();
 });
-bV.addEventListener("click", () => { if (atual>0){ atual--; salvar(); render(); } });
+bV.addEventListener("click", () => { if (atual>0){ atual = proxima(atual, -1); salvar(); render(); } });
+// pula seções cuja condição não vale (ex.: Colete só para quem não usaria / preferia não)
+function proxima(i, passo){ let j = i + passo; while (SECOES[j] && SECOES[j].cond && !SECOES[j].cond(R)) j += passo; return j; }
+const ativa = q => { const s = SECOES.find(x => x.qs.includes(q)); return !s.cond || s.cond(R); };
 
 render();
 </script>
