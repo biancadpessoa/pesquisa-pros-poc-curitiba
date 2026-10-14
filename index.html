@@ -304,10 +304,11 @@ let R = {};            // respostas
 let ORDEM = {};        // ordem embaralhada por pergunta (fixa durante a sessão)
 let atual = 0;
 let enviado = false;
+let inicio = Date.now();   // para comparar tempo de resposta com a versão chat
 
-try { const s = JSON.parse(localStorage.getItem(CHAVE) || "null"); if (s && !s.enviado){ R = s.R || {}; ORDEM = s.ORDEM || {}; atual = s.atual || 0; } else if (s && s.enviado){ enviado = true; } } catch(e){}
+try { const s = JSON.parse(localStorage.getItem(CHAVE) || "null"); if (s && !s.enviado){ R = s.R || {}; ORDEM = s.ORDEM || {}; atual = s.atual || 0; inicio = s.inicio || inicio; } else if (s && s.enviado){ enviado = true; } } catch(e){}
 
-function salvar(){ try { localStorage.setItem(CHAVE, JSON.stringify({R, ORDEM, atual, enviado})); } catch(e){} }
+function salvar(){ try { localStorage.setItem(CHAVE, JSON.stringify({R, ORDEM, atual, enviado, inicio})); } catch(e){} }
 
 function embaralhar(arr){ const a = arr.slice(); for (let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
 function opcoesDe(q){
@@ -467,7 +468,7 @@ function validar(){
 
 /* ---------- envio ---------- */
 function montarLinha(parcial){
-  const f = [["versao", VERSAO], ["codigo", (R.P0a||"").trim()]];
+  const f = [["versao", VERSAO], ["formato", "lista"], ["tempo_seg", Math.round((Date.now()-inicio)/1000)], ["codigo", (R.P0a||"").trim()]];
   for (const s of SECOES) for (const q of s.qs){
     if (q.type==="code") continue;
     if (parcial && q.id!=="P0b") continue;
