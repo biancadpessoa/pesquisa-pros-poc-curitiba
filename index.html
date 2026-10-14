@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Pesquisa de Perfil dos Profissionais — Madeira Serviços</title>
+<style>
+/* Fonte do sistema de propósito: carrega na hora, mesmo em plano pré-pago com pouco dado. */
+:root{
+  --laranja:#E8590C; --laranja-escuro:#B8460A; --laranja-claro:#FFF1E8;
+  --tinta:#1B2430; --tinta-suave:#5A6472; --linha:#D9DDE3;
+  --fundo:#EEF0F3; --papel:#FFFFFF; --erro:#C0262D; --ok:#1F7A4D;
+  color-scheme: light;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --laranja:#FF8A3D; --laranja-escuro:#FFB07A; --laranja-claro:#3A2416;
+    --tinta:#ECEFF3; --tinta-suave:#A3ACB8; --linha:#39414D;
+    --fundo:#14181E; --papel:#1D232B; --erro:#FF6B70; --ok:#5BD49A;
+    color-scheme: dark;
+  }
+}
+*,*::before,*::after{box-sizing:inherit}
+html,body{margin:0}
+body{
+  background:var(--fundo); color:var(--tinta);
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  font-size:17px; line-height:1.45; -webkit-text-size-adjust:100%;
+}
+.topo{
+  position:sticky; top:env(safe-area-inset-top,0px); z-index:5;
+  background:var(--papel); border-bottom:1px solid var(--linha);
+}
+.topo-in{max-width:640px; margin:0 auto; padding:10px 18px 8px; display:flex; align-items:center; gap:12px}
+.marca{font-weight:700; font-size:15px; letter-spacing:-.01em}
+.marca b{color:var(--laranja)}
+.etapa{margin-left:auto; font-size:14px; color:var(--tinta-suave); white-space:nowrap}
+.barra{height:5px; background:var(--linha)}
+.barra i{display:block; height:100%; width:0; background:var(--laranja); transition:width .3s ease}
+
+main{max-width:640px; margin:0 auto; padding:22px 18px 120px}
+
+.cab{display:flex; gap:16px; align-items:flex-start; margin:6px 0 22px}
+.letra{
+  flex:none; width:64px; height:64px; border-radius:14px;
+  background:var(--laranja); color:#fff; display:grid; place-items:center;
+  font-size:40px; font-weight:800; line-height:1;
+}
+.cab h1{font-size:23px; line-height:1.2; margin:2px 0 6px; letter-spacing:-.015em}
+.cab p{margin:0; color:var(--tinta-suave); font-size:16px}
+.intro{background:var(--papel); border:1px solid var(--linha); border-radius:12px; padding:16px 18px; margin-bottom:18px}
+.intro p{margin:0 0 10px}
+.intro p:last-child{margin:0}
+
+.q{background:var(--papel); border:1px solid var(--linha); border-radius:12px; padding:18px; margin-bottom:14px}
+.q.invalida{border-color:var(--erro); box-shadow:0 0 0 1px var(--erro)}
+.q-n{font-size:14px; color:var(--tinta-suave); margin-bottom:4px}
+.q h2{font-size:18px; line-height:1.35; margin:0 0 4px; font-weight:650}
+.q .obr{color:var(--erro)}
+.q .ajuda{font-size:15px; color:var(--tinta-suave); margin:0 0 10px}
+.q .msg{display:none; color:var(--erro); font-size:15px; margin-top:10px; font-weight:600}
+.q.invalida .msg{display:block}
+
+.opcoes{display:flex; flex-direction:column; gap:8px; margin-top:12px}
+.op{
+  display:flex; align-items:center; gap:12px; width:100%;
+  min-height:52px; padding:12px 14px; text-align:left;
+  background:var(--papel); color:var(--tinta); font:inherit; font-size:16px;
+  border:1.5px solid var(--linha); border-radius:10px; cursor:pointer;
+}
+.op .marc{
+  flex:none; width:22px; height:22px; border:2px solid var(--tinta-suave);
+  display:grid; place-items:center;
+}
+.op[data-tipo="single"] .marc{border-radius:50%}
+.op[data-tipo="multi"] .marc{border-radius:5px}
+.op[aria-checked="true"]{border-color:var(--laranja); background:var(--laranja-claro)}
+.op[aria-checked="true"] .marc{border-color:var(--laranja); background:var(--laranja)}
+.op[aria-checked="true"] .marc::after{content:""; width:8px; height:8px; background:#fff; border-radius:inherit}
+.op[data-tipo="multi"][aria-checked="true"] .marc::after{
+  width:6px; height:11px; background:none; border:solid #fff; border-width:0 2.5px 2.5px 0;
+  transform:translateY(-1px) rotate(45deg); border-radius:0;
+}
+.op:disabled{opacity:.45; cursor:not-allowed}
+.op:focus-visible,.btn:focus-visible,.nota:focus-visible,.rk:focus-visible,input:focus-visible,textarea:focus-visible{
+  outline:3px solid var(--laranja); outline-offset:2px
+}
+input[type=text],textarea{
+  width:100%; font:inherit; font-size:16px; color:var(--tinta); background:var(--papel);
+  border:1.5px solid var(--linha); border-radius:10px; padding:12px 14px;
+}
+textarea{min-height:110px; resize:vertical}
+input[readonly]{background:var(--fundo); color:var(--tinta-suave)}
+.outro{margin-top:8px; display:none}
+.outro.on{display:block}
+.contador{font-size:14px; color:var(--tinta-suave); margin-top:8px}
+
+.escala{display:grid; grid-template-columns:repeat(11,1fr); gap:4px; margin-top:12px}
+.nota{
+  min-height:48px; padding:0; font:inherit; font-size:16px; font-weight:600;
+  background:var(--papel); color:var(--tinta); border:1.5px solid var(--linha); border-radius:8px; cursor:pointer;
+}
+.nota[aria-checked="true"]{background:var(--laranja); border-color:var(--laranja); color:#fff}
+.rotulos{display:flex; justify-content:space-between; font-size:14px; color:var(--tinta-suave); margin-top:6px}
+@media (max-width:420px){
+  .escala{grid-template-columns:repeat(6,1fr)}
+}
+
+.grade{margin-top:12px; display:flex; flex-direction:column; gap:8px}
+.gl{display:flex; align-items:center; gap:10px; padding:10px 12px; border:1.5px solid var(--linha); border-radius:10px}
+.gl.tem{border-color:var(--laranja); background:var(--laranja-claro)}
+.gl span{flex:1; font-size:16px}
+.rks{display:flex; gap:6px; flex:none}
+.rk{
+  width:44px; height:44px; font:inherit; font-size:15px; font-weight:700;
+  background:var(--papel); color:var(--tinta); border:1.5px solid var(--linha); border-radius:8px; cursor:pointer;
+}
+.rk[aria-pressed="true"]{background:var(--laranja); border-color:var(--laranja); color:#fff}
+
+.nav{
+  position:fixed; left:0; right:0; bottom:0; z-index:5;
+  background:var(--papel); border-top:1px solid var(--linha);
+  padding:12px 18px calc(12px + env(safe-area-inset-bottom,0px));
+}
+.nav-in{max-width:640px; margin:0 auto; display:flex; gap:10px}
+.btn{
+  min-height:52px; padding:0 20px; font:inherit; font-size:17px; font-weight:700;
+  border-radius:10px; cursor:pointer; border:1.5px solid var(--linha);
+  background:var(--papel); color:var(--tinta);
+}
+.btn.pri{flex:1; background:var(--laranja); border-color:var(--laranja); color:#fff}
+.btn.pri:hover{background:var(--laranja-escuro); border-color:var(--laranja-escuro)}
+.btn:disabled{opacity:.6; cursor:wait}
+.btn[hidden]{display:none}
+
+.final{text-align:center; padding:48px 8px}
+.final .selo{
+  width:84px; height:84px; margin:0 auto 20px; border-radius:50%;
+  background:var(--laranja); display:grid; place-items:center;
+}
+.final .selo::after{content:""; width:20px; height:36px; border:solid #fff; border-width:0 6px 6px 0; transform:translateY(-4px) rotate(45deg)}
+.final h1{font-size:24px; margin:0 0 10px}
+.final p{color:var(--tinta-suave); margin:0 auto; max-width:440px}
+.aviso{background:var(--laranja-claro); border:1px solid var(--laranja); border-radius:10px; padding:12px 14px; font-size:15px; margin-bottom:16px}
+.falha{color:var(--erro); font-weight:600; margin-top:16px}
+@media (prefers-reduced-motion: reduce){ .barra i{transition:none} }
+</style>
+</head>
+<body>
+<header class="topo">
+  <div class="topo-in">
+    <div class="marca"><b>Madeira</b> Serviços</div>
+    <div class="etapa" id="etapa"></div>
+  </div>
+  <div class="barra" aria-hidden="true"><i id="progresso"></i></div>
+</header>
+
+<main id="app" aria-live="polite"></main>
+
+<nav class="nav" id="nav">
+  <div class="nav-in">
+    <button class="btn" id="voltar" type="button">Voltar</button>
+    <button class="btn pri" id="avancar" type="button">Continuar</button>
+  </div>
+</nav>
+
+<script>
+/* ============ CONFIGURAÇÃO ============ */
+// Cole aqui a URL do Web App do Apps Script (termina em /exec).
+const ENDPOINT = "https://script.google.com/macros/s/AKfycbwbBrVkpjNnxcjdF0pR218bwZHqLpy7fVDZqoRmFgvpxK_2n2zKH32JjnRqeHyXB6fc/exec";
+const MARCA = "Madeira Serviços";
+const VERSAO = "2026-10-14";
+/* ====================================== */
+
+const M = s => s.replace(/\{M\}/g, MARCA);
+const OPC = "Opcional. Escreva do seu jeito, pode ser curto.";
+
+// type: single | multi | scale | grid | text | code
+// excl: opções que, quando marcadas, desmarcam as outras (ex.: "Nenhum")
+const SECOES = [
+  { letra:"", titulo:"Pesquisa de Perfil dos Profissionais", desc:"",
+    intro:[
+      "Olá! Queremos conhecer melhor você e a sua rotina de trabalho para melhorar a plataforma, a oferta de serviços e os benefícios para os profissionais.",
+      "Leva cerca de 15 minutos. Não existe resposta certa ou errada, e suas respostas NÃO afetam sua nota nem a oferta de serviços.",
+      "Os dados são tratados de forma confidencial, conforme a LGPD, e analisados apenas de forma agrupada."
+    ],
+    qs:[
+      {id:"P0a", n:"", text:"Código do profissional", type:"code", req:true,
+        help:"Digite o seu código de profissional."},
+      {id:"P0b", n:"", text:"Você concorda em participar desta pesquisa e que suas respostas sejam usadas de forma agrupada para melhorar a plataforma?",
+        type:"single", req:true, options:["Sim, concordo","Não concordo"]}
+    ]},
+  { letra:"A", titulo:"Quem é você e como aprendeu", desc:"Sobre sua trajetória no ofício.", qs:[
+      {id:"P01", n:1, text:"Qual sua faixa de idade?", type:"single", req:true, options:["18–24","25–34","35–44","45–54","55+"]},
+      {id:"P02", n:2, text:"Há quanto tempo você trabalha com montagem de móveis?", type:"single", req:true,
+        options:["Menos de 1 ano","1–3 anos","3–5 anos","5–10 anos","Mais de 10 anos"]},
+      {id:"P03", n:3, text:"Como você aprendeu o ofício? (marque todas)", type:"multi", req:true, other:true,
+        options:["Sozinho, na prática","Vídeos na internet","Com familiar ou amigo","Como ajudante de outro montador","Trabalhando em loja, fábrica ou marcenaria","Curso (SENAI, Sebrae, outro)"]},
+      {id:"P04", n:4, text:"Além de montagem, quais serviços você sabe fazer bem? (marque todas)", type:"multi", req:true, other:true,
+        options:["Desmontagem","Instalação de painéis e suportes de TV","Prateleiras e fixação em parede","Cortinas e persianas","Elétrica","Hidráulica","Marcenaria e ajustes","Limpeza ou impermeabilização de estofados","Nenhum além de montagem"],
+        excl:["Nenhum além de montagem"]},
+      {id:"P05", n:5, text:"Existe algum móvel que você não monta ou prefere evitar? (marque todas)", type:"multi", req:true, other:true,
+        options:["Painel","Cama box baú","Mesa","Cozinha modulada","Guarda-roupa grande","Home office com gaveteiro","Monto todos"],
+        excl:["Monto todos"]},
+      {id:"P06", n:6, text:"Você já fez algum curso de segurança no trabalho (uso de EPI, trabalho em altura, fixação em parede)?", type:"single", req:true,
+        options:["Sim","Não","Não, mas gostaria"]},
+      {id:"P07", n:7, text:"Em quais temas você gostaria de receber treinamento? (marque todas)", type:"multi", req:true,
+        options:["Móveis complexos (cozinha, painel)","Fixação em drywall e porcelanato","Segurança e EPI","Atendimento ao cliente","Uso do app","Gestão do próprio negócio e precificação","Elétrica ou hidráulica","Não tenho interesse"],
+        excl:["Não tenho interesse"]}
+    ]},
+  { letra:"B", titulo:"Sua rotina e outras fontes de trabalho", desc:"Sobre como você organiza sua semana.", qs:[
+      {id:"P08", n:8, text:"A montagem é sua principal fonte de renda?", type:"single", req:true,
+        options:["É a única","É a principal, mas tenho outras","É um complemento"]},
+      {id:"P09", n:9, text:"Além da {M}, onde você pega trabalho hoje? (marque todas)", type:"multi", req:true, other:true,
+        options:["Clientes particulares e indicação","Lojas de móveis ou varejistas","Empresas terceirizadas de montagem","Outros apps de serviço (ex.: GetNinjas)","Apps de transporte ou entrega (Uber, 99, iFood)","Emprego com carteira assinada","Nenhum, só a {M}"],
+        excl:["Nenhum, só a {M}"]},
+      {id:"P10", n:10, text:"Do total de serviços que você faz no mês, quanto vem da {M}?", type:"single", req:true,
+        options:["Quase tudo (80% ou mais)","Mais da metade","Cerca de metade","Menos da metade","Muito pouco"]},
+      {id:"P11", n:11, text:"Quantos dias por semana você costuma trabalhar com montagem?", type:"single", req:true, options:["1–2","3–4","5","6–7"]},
+      {id:"P12", n:12, text:"Em quais dias e períodos você prefere pegar serviços? (marque todas)", type:"multi", req:true,
+        options:["Dias úteis de manhã","Dias úteis à tarde","Sábado","Domingo e feriado"]},
+      {id:"P13", n:13, text:"No fim do ano a demanda aumenta. Você teria interesse em pegar serviços: (marque todas)", type:"multi", req:true,
+        options:["Aos domingos","Em feriados","À noite, até 20h","Não tenho interesse"], excl:["Não tenho interesse"]},
+      {id:"P14", n:14, text:"Num dia bom, quantos serviços de montagem você consegue fazer?", type:"single", req:true, options:["1","2","3","4","5 ou mais"]},
+      {id:"P15", n:15, text:"Hoje, a plataforma oferece volume de serviços suficiente para você?", type:"single", req:true,
+        options:["Mais do que consigo fazer","Suficiente","Menos do que eu gostaria","Muito menos"]},
+      {id:"P16", n:16, text:"Quando você recusa ou deixa passar um serviço da {M}, qual o principal motivo? (até 3)", type:"multi", req:true, other:true, max:3, shuffle:true,
+        options:["Longe demais","Valor baixo","Horário não encaixa","Móvel complexo demais","Já tenho agenda em outro lugar","Não vi a oferta a tempo","Falta ferramenta ou ajudante"]},
+      {id:"P17", n:17, text:"Se a {M} garantisse um volume mínimo de serviços por semana perto de você, você trabalharia só ou principalmente com a {M}?", type:"single", req:true,
+        options:["Sim","Talvez, dependendo do valor","Não"]}
+    ]},
+  { letra:"C", titulo:"Deslocamento", desc:"Sobre como você chega até os serviços.", qs:[
+      {id:"P18", n:18, text:"Como você se desloca até os serviços? (principal)", type:"single", req:true, other:true,
+        options:["Carro","Moto","Ônibus ou metrô","Bicicleta","Carona ou o ajudante leva"]},
+      {id:"P19", n:19, text:"O veículo que você usa é:", type:"single", req:true,
+        options:["Próprio e quitado","Próprio e financiado","Alugado","Emprestado","Não uso veículo"]},
+      {id:"P20", n:20, text:"Você mora na mesma cidade onde faz a maior parte dos serviços?", type:"single", req:true,
+        options:["Sim","Não, em cidade vizinha","Não, a mais de 50 km"]},
+      {id:"P21", n:21, text:"Qual a distância máxima que você considera ideal para aceitar um serviço?", type:"single", req:true,
+        options:["Até 5 km","5–10 km","10–20 km","20–40 km","Mais de 40 km"]},
+      {id:"P22", n:22, text:"Quanto você gasta por dia com deslocamento (combustível, passagem, estacionamento)?", type:"single", req:true,
+        options:["Até R$ 20","R$ 20–50","R$ 50–100","Mais de R$ 100"]},
+      {id:"P23", n:23, text:"Nos últimos 3 meses, quantas vezes você atrasou ou faltou a um serviço por problema de transporte ou distância?", type:"single", req:true,
+        options:["Nenhuma","1–2","3–5","Mais de 5"]}
+    ]},
+  { letra:"D", titulo:"Ferramentas e forma de trabalho", desc:"Sobre o que você leva para o serviço.", qs:[
+      {id:"P24", n:24, text:"Quais ferramentas te acompanham no dia a dia? (marque todas)", type:"multi", req:true, other:true,
+        options:["Parafusadeira","Furadeira de impacto","Nível a laser","Detector de cano e fiação","Escada","Serra ou tico-tico","Kit de brocas para alvenaria e porcelanato","Suporte telescópico (terceira mão)","Sargento angular ou equivalente","Aspirador portátil"]},
+      {id:"P25", n:25, text:"Você leva materiais de reposição para os serviços? (marque todas)", type:"multi", req:true,
+        options:["Buchas e parafusos extras, inclusive para drywall","Massa ou caneta para retoque de riscos","Cola","Dobradiças ou corrediças","Não levo"], excl:["Não levo"]},
+      {id:"P26", n:26, text:"Quais EPIs você usa nos serviços? (marque todas)", type:"multi", req:true,
+        options:["Óculos","Luvas","Protetor auricular","Calçado de segurança","Nenhum"], excl:["Nenhum"]},
+      {id:"P27", n:27, text:"Você trabalha com ajudante?", type:"single", req:true,
+        options:["Sempre","Só em serviços grandes, quando consigo","Nunca, trabalho sozinho"]},
+      {id:"P28", n:28, text:"Você tem MEI ou CNPJ?", type:"single", req:true, options:["Sim","Não","Estou abrindo","Não sei o que é"]},
+      {id:"P29a", n:"29a", text:"Qual celular você usa no trabalho?", type:"single", req:true, options:["Android","iPhone"]},
+      {id:"P29b", n:"29b", text:"Qual o seu plano de internet no celular?", type:"single", req:true, options:["Pré-pago","Controle","Pós-pago","Uso só Wi-Fi"]}
+    ]},
+  { letra:"E", titulo:"Ganhos", desc:"Perguntas opcionais, em faixas. Responda só se se sentir à vontade.", qs:[
+      {id:"P30", n:30, text:"Quanto você ganha por mês, em média, somando todos os serviços de montagem?", type:"single", req:false,
+        options:["Até R$ 2 mil","R$ 2–4 mil","R$ 4–6 mil","R$ 6–9 mil","Mais de R$ 9 mil","Prefiro não dizer"]},
+      {id:"P31", n:31, text:"Quanto você precisa ganhar num dia para valer a pena sair de casa?", type:"single", req:false,
+        options:["Até R$ 150","R$ 150–250","R$ 250–400","Mais de R$ 400"]},
+      {id:"P32", n:32, text:"Se houvesse serviço sobrando na plataforma, quanto você gostaria de ganhar por dia?", type:"single", req:false,
+        options:["Até R$ 250","R$ 250–400","R$ 400–600","Mais de R$ 600"]},
+      {id:"P33", n:33, text:"Comparando com suas outras fontes, a {M} paga:", type:"single", req:false,
+        options:["Melhor","Igual","Pior","Só trabalho com a {M}"]},
+      {id:"P34", n:34, text:"Receber mais rápido mudaria quanto você trabalha com a {M}?", type:"single", req:false,
+        options:["Muito","Um pouco","Não mudaria"]}
+    ]},
+  { letra:"F", titulo:"Sua experiência com a {M}", desc:"Seja sincero: é assim que a gente melhora.", qs:[
+      {id:"P35", n:35, text:"De 0 a 10, quanto você recomendaria a {M} para outro montador trabalhar?", type:"scale", req:true,
+        min:0, max:10, lo:"Não recomendaria", hi:"Recomendaria muito"},
+      {id:"P36", n:36, text:"Quais são as maiores dificuldades de trabalhar com a {M}? (até 3)", type:"multi", req:true, max:3, shuffle:true,
+        options:["Valor do serviço","Distância entre serviços","Poucos serviços perto de mim","App difícil ou instável","Suporte demora a responder","Cliente ausente ou endereço errado","Peça faltando ou produto avariado","Prazo de pagamento","Regras e punições pouco claras"]},
+      {id:"P37", n:37, text:"Com que frequência você encontra peça faltando ou produto avariado?", type:"single", req:true,
+        options:["Quase nunca","1 a cada 10 serviços","1 a cada 5 serviços","Mais que isso"]},
+      {id:"P38", n:38, text:"Qual parte do app mais atrapalha seu dia? (até 2)", type:"multi", req:true, max:2, shuffle:true,
+        options:["Aceitar serviço","Agenda","Rota e endereço","Chat com o cliente","Fotos e finalização","Extrato e pagamento","Nenhuma"], excl:["Nenhuma"]},
+      {id:"P39", n:39, text:"O que você ainda precisa pedir ao suporte e gostaria de resolver sozinho no app?", type:"text", req:false, help:OPC},
+      {id:"P40", n:40, text:"Você gostaria de ver sua nota e os comentários dos clientes no app?", type:"single", req:true,
+        options:["Sim, sempre","Sim, só o resumo","Tanto faz"]}
+    ]},
+  { letra:"G", titulo:"Benefícios e futuro", desc:"Últimas perguntas!", qs:[
+      {id:"P41", n:41, text:"Escolha os 3 benefícios que mais fariam diferença para você", type:"grid", req:false, shuffle:true,
+        help:"Marque 1º, 2º e 3º lugar. Os demais ficam em branco.", cols:["1º","2º","3º"],
+        rows:["Antecipação de pagamento","Prioridade para escolher serviços","Agenda com serviços agrupados perto","Plano de saúde","Seguro contra acidentes","Crédito para ferramentas ou veículo","Desconto em combustível ou assistência veicular","Cursos e certificação","Kit de EPI"]},
+      {id:"P42", n:42, text:"Nos próximos 12 meses, você pretende:", type:"single", req:true,
+        options:["Trabalhar mais com montagem","Manter como está","Montar equipe ou empresa","Diminuir ou mudar de área"]},
+      {id:"P43", n:43, text:"O que faria você deixar de trabalhar com a {M}?", type:"text", req:false, help:OPC},
+      {id:"P44", n:44, text:"Se você fosse o dono da {M}, o que mudaria primeiro?", type:"text", req:false, help:OPC},
+      {id:"P45", n:45, text:"Qual tamanho de camiseta você usa?", type:"single", req:true, help:"Para o envio do seu colete.",
+        options:["P","M","G","GG","XG"]}
+    ]}
+];
+
+/* ---------- estado ---------- */
+const CHAVE = "pesq-pros-" + VERSAO;
+let R = {};            // respostas
+let ORDEM = {};        // ordem embaralhada por pergunta (fixa durante a sessão)
+let atual = 0;
+let enviado = false;
+
+try { const s = JSON.parse(localStorage.getItem(CHAVE) || "null"); if (s && !s.enviado){ R = s.R || {}; ORDEM = s.ORDEM || {}; atual = s.atual || 0; } else if (s && s.enviado){ enviado = true; } } catch(e){}
+
+function salvar(){ try { localStorage.setItem(CHAVE, JSON.stringify({R, ORDEM, atual, enviado})); } catch(e){} }
+
+function embaralhar(arr){ const a = arr.slice(); for (let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+function opcoesDe(q){
+  const base = q.type==="grid" ? q.rows : q.options;
+  if (!q.shuffle) return base.map(M);
+  if (!ORDEM[q.id]){
+    const fixas = (q.excl||[]).map(M);
+    const mov = base.map(M).filter(o => !fixas.includes(o));
+    ORDEM[q.id] = embaralhar(mov).concat(fixas);  // "Nenhuma" fica sempre no fim
+  }
+  return ORDEM[q.id];
+}
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+/* ---------- render ---------- */
+const app = document.getElementById("app");
+const bV = document.getElementById("voltar"), bA = document.getElementById("avancar");
+
+function render(){
+  if (enviado) return telaFinal(true);
+  const s = SECOES[atual];
+  const total = SECOES.length;
+  document.getElementById("etapa").textContent = `Etapa ${atual+1} de ${total}`;
+  document.getElementById("progresso").style.width = (atual/total*100) + "%";
+
+  let h = "";
+  if (!ENDPOINT || ENDPOINT.startsWith("COLE_")) h += `<div class="aviso">Modo de teste: o endereço de envio ainda não foi configurado, então as respostas não serão gravadas.</div>`;
+  if (s.letra){
+    h += `<div class="cab"><div class="letra" aria-hidden="true">${s.letra}</div><div><h1>${esc(M(s.titulo))}</h1><p>${esc(M(s.desc))}</p></div></div>`;
+  } else {
+    h += `<div class="cab"><div><h1>${esc(M(s.titulo))}</h1></div></div><div class="intro">${s.intro.map(p=>`<p>${esc(p)}</p>`).join("")}</div>`;
+  }
+  s.qs.forEach(q => h += renderQ(q));
+  app.innerHTML = h;
+
+  bV.hidden = atual === 0;
+  bA.textContent = atual === total-1 ? "Enviar respostas" : "Continuar";
+  ligar();
+  window.scrollTo(0,0);
+}
+
+function renderQ(q){
+  const num = q.n !== "" ? `<div class="q-n">Pergunta ${q.n}</div>` : "";
+  const req = q.req ? ` <span class="obr" aria-label="obrigatória">*</span>` : "";
+  const help = q.help ? `<p class="ajuda">${esc(M(q.help))}</p>` : (q.max ? `<p class="ajuda">Escolha até ${q.max}.</p>` : "");
+  let corpo = "";
+
+  if (q.type==="code"){
+    corpo = `<input type="text" id="in-${q.id}" data-q="${q.id}" value="${esc(R[q.id]||"")}" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="${esc(q.text)}">`;
+  }
+  if (q.type==="single" || q.type==="multi"){
+    const ops = opcoesDe(q);
+    const sel = q.type==="multi" ? (R[q.id]||[]) : [R[q.id]];
+    const lista = q.other ? ops.concat(["Outro"]) : ops;
+    corpo = `<div class="opcoes" role="${q.type==="single"?"radiogroup":"group"}" aria-label="${esc(M(q.text))}">` +
+      lista.map(o => `<button type="button" class="op" role="${q.type==="single"?"radio":"checkbox"}" data-tipo="${q.type}" data-q="${q.id}" data-v="${esc(o)}" aria-checked="${sel.includes(o)}"><span class="marc"></span><span>${esc(o)}</span></button>`).join("") +
+      `</div>`;
+    if (q.other){
+      const on = sel.includes("Outro");
+      corpo += `<div class="outro ${on?"on":""}" id="outro-${q.id}"><input type="text" data-outro="${q.id}" placeholder="Qual?" value="${esc(R[q.id+"_outro"]||"")}" aria-label="Descreva a opção Outro"></div>`;
+    }
+    if (q.max) corpo += `<div class="contador" id="cont-${q.id}">${(R[q.id]||[]).length} de ${q.max} escolhidas</div>`;
+  }
+  if (q.type==="scale"){
+    let b = ""; for (let i=q.min;i<=q.max;i++) b += `<button type="button" class="nota" role="radio" data-q="${q.id}" data-v="${i}" aria-checked="${R[q.id]===i}">${i}</button>`;
+    corpo = `<div class="escala" role="radiogroup" aria-label="${esc(M(q.text))}">${b}</div><div class="rotulos"><span>0 = ${esc(q.lo)}</span><span>10 = ${esc(q.hi)}</span></div>`;
+  }
+  if (q.type==="grid"){
+    const g = R[q.id] || {};
+    corpo = `<div class="grade">` + opcoesDe(q).map(row => {
+      const tem = Object.values(g).includes(row);
+      return `<div class="gl ${tem?"tem":""}"><span>${esc(row)}</span><div class="rks">` +
+        q.cols.map(c => `<button type="button" class="rk" data-q="${q.id}" data-row="${esc(row)}" data-col="${c}" aria-pressed="${g[c]===row}" aria-label="${esc(row)}: ${c} lugar">${c}</button>`).join("") +
+        `</div></div>`;
+    }).join("") + `</div>`;
+  }
+  if (q.type==="text"){
+    corpo = `<textarea data-q="${q.id}" aria-label="${esc(M(q.text))}">${esc(R[q.id]||"")}</textarea>`;
+  }
+  return `<section class="q" id="q-${q.id}">${num}<h2>${esc(M(q.text))}${req}</h2>${help}${corpo}<div class="msg" id="msg-${q.id}"></div></section>`;
+}
+
+function acharQ(id){ for (const s of SECOES) for (const q of s.qs) if (q.id===id) return q; }
+
+function ligar(){
+  app.querySelectorAll(".op").forEach(b => b.addEventListener("click", () => {
+    const q = acharQ(b.dataset.q), v = b.dataset.v;
+    if (q.type==="single"){
+      R[q.id] = v;
+    } else {
+      let arr = (R[q.id]||[]).slice();
+      const excl = (q.excl||[]).map(M);
+      if (arr.includes(v)) arr = arr.filter(x => x!==v);
+      else {
+        if (excl.includes(v)) arr = [v];
+        else {
+          arr = arr.filter(x => !excl.includes(x));
+          if (q.max && arr.length >= q.max) return mostrarMsg(q.id, `Você pode escolher até ${q.max}. Desmarque uma para trocar.`);
+          arr.push(v);
+        }
+      }
+      R[q.id] = arr;
+    }
+    limparMsg(q.id); atualizarQ(q); salvar();
+  }));
+  app.querySelectorAll(".nota").forEach(b => b.addEventListener("click", () => {
+    const q = acharQ(b.dataset.q); R[q.id] = Number(b.dataset.v); limparMsg(q.id); atualizarQ(q); salvar();
+  }));
+  app.querySelectorAll(".rk").forEach(b => b.addEventListener("click", () => {
+    const q = acharQ(b.dataset.q), row = b.dataset.row, col = b.dataset.col;
+    const g = Object.assign({}, R[q.id]||{});
+    if (g[col]===row) delete g[col];
+    else { for (const c of Object.keys(g)) if (g[c]===row) delete g[c]; g[col] = row; } // 1 lugar por linha e 1 linha por lugar
+    R[q.id] = g; atualizarQ(q); salvar();
+  }));
+  app.querySelectorAll("[data-outro]").forEach(i => i.addEventListener("input", () => { R[i.dataset.outro+"_outro"] = i.value; limparMsg(i.dataset.outro); salvar(); }));
+  app.querySelectorAll("textarea[data-q], input[data-q]").forEach(i => i.addEventListener("input", () => { R[i.dataset.q] = i.value; salvar(); }));
+}
+
+function atualizarQ(q){
+  if (q.type==="single" || q.type==="multi"){
+    const sel = q.type==="multi" ? (R[q.id]||[]) : [R[q.id]];
+    app.querySelectorAll(`.op[data-q="${q.id}"]`).forEach(b => b.setAttribute("aria-checked", sel.includes(b.dataset.v)));
+    const o = document.getElementById("outro-"+q.id);
+    if (o){ o.classList.toggle("on", sel.includes("Outro")); if (sel.includes("Outro")) o.querySelector("input").focus(); }
+    const c = document.getElementById("cont-"+q.id); if (c) c.textContent = `${sel.length} de ${q.max} escolhidas`;
+  }
+  if (q.type==="scale") app.querySelectorAll(`.nota[data-q="${q.id}"]`).forEach(b => b.setAttribute("aria-checked", Number(b.dataset.v)===R[q.id]));
+  if (q.type==="grid"){
+    const g = R[q.id]||{};
+    app.querySelectorAll(`.rk[data-q="${q.id}"]`).forEach(b => b.setAttribute("aria-pressed", g[b.dataset.col]===b.dataset.row));
+    app.querySelectorAll(`#q-${q.id} .gl`).forEach(l => l.classList.toggle("tem", Object.values(g).includes(l.querySelector("span").textContent)));
+  }
+}
+
+function mostrarMsg(id, t){ const el = document.getElementById("q-"+id); if(!el) return; el.classList.add("invalida"); document.getElementById("msg-"+id).textContent = t; }
+function limparMsg(id){ const el = document.getElementById("q-"+id); if(el) el.classList.remove("invalida"); }
+
+function validar(){
+  let primeira = null;
+  for (const q of SECOES[atual].qs){
+    let erro = "";
+    const v = R[q.id];
+    if (q.type==="code" && R.P0b!=="Não concordo" && !(v||"").trim()) erro = "Digite o seu código de profissional.";
+    if (q.req && !erro){
+      if (q.type==="multi" && !(v||[]).length) erro = "Marque pelo menos uma opção.";
+      else if (q.type==="scale" && typeof v !== "number") erro = "Escolha uma nota de 0 a 10.";
+      else if (q.type==="single" && !v) erro = "Escolha uma opção.";
+    }
+    const sel = q.type==="multi" ? (v||[]) : [v];
+    if (!erro && q.other && sel.includes("Outro") && !(R[q.id+"_outro"]||"").trim()) erro = "Escreva qual é a opção Outro.";
+    if (erro){ mostrarMsg(q.id, erro); if(!primeira) primeira = q.id; }
+  }
+  if (primeira) document.getElementById("q-"+primeira).scrollIntoView({behavior:"smooth", block:"center"});
+  return !primeira;
+}
+
+/* ---------- envio ---------- */
+function montarLinha(parcial){
+  const f = [["versao", VERSAO], ["codigo", (R.P0a||"").trim()]];
+  for (const s of SECOES) for (const q of s.qs){
+    if (q.type==="code") continue;
+    if (parcial && q.id!=="P0b") continue;
+    const v = R[q.id];
+    if (q.type==="grid"){ q.cols.forEach((c,i) => f.push([`${q.id}_${i+1}lugar`, (v||{})[c]||""])); continue; }
+    f.push([q.id, Array.isArray(v) ? v.join("; ") : (v ?? "")]);
+    if (q.other) f.push([q.id+"_outro", R[q.id+"_outro"]||""]);
+  }
+  f.push(["user_agent", navigator.userAgent]);
+  return f;
+}
+
+async function enviar(parcial){
+  bA.disabled = true; bA.textContent = "Enviando…";
+  const payload = JSON.stringify({fields: montarLinha(parcial)});
+  try {
+    if (ENDPOINT && !ENDPOINT.startsWith("COLE_")){
+      // text/plain evita a checagem de CORS; o Apps Script lê o corpo normalmente.
+      await fetch(ENDPOINT, {method:"POST", mode:"no-cors", headers:{"Content-Type":"text/plain;charset=utf-8"}, body:payload});
+    } else {
+      console.log("[modo de teste] linha que seria gravada:", JSON.parse(payload));
+    }
+    if (ENDPOINT && !ENDPOINT.startsWith("COLE_")){ enviado = true; salvar(); } // em modo de teste não trava o aparelho
+    telaFinal(false, parcial);
+  } catch(e){
+    bA.disabled = false; bA.textContent = "Tentar enviar de novo";
+    let el = document.getElementById("falha");
+    if (!el){ el = document.createElement("p"); el.id="falha"; el.className="falha"; app.appendChild(el); }
+    el.textContent = "Não foi possível enviar. Verifique sua internet e toque em “Tentar enviar de novo”. Suas respostas continuam salvas neste celular.";
+  }
+}
+
+function telaFinal(jaEnviado, recusou){
+  document.getElementById("etapa").textContent = "";
+  document.getElementById("progresso").style.width = "100%";
+  document.getElementById("nav").hidden = true;
+  const msg = recusou
+    ? "Tudo bem, respeitamos sua decisão. Nenhuma outra informação foi coletada."
+    : "Suas respostas vão ajudar a construir uma plataforma melhor para você.";
+  app.innerHTML = `<div class="final"><div class="selo" aria-hidden="true"></div><h1>${jaEnviado ? "Você já respondeu esta pesquisa" : "Obrigado!"}</h1><p>${jaEnviado ? "Recebemos suas respostas. Obrigado pela participação!" : msg}</p></div>`;
+  window.scrollTo(0,0);
+}
+
+bA.addEventListener("click", () => {
+  if (!validar()) return;
+  if (atual===0 && R.P0b==="Não concordo") return enviar(true);   // lógica de consentimento
+  if (atual===SECOES.length-1) return enviar(false);
+  atual++; salvar(); render();
+});
+bV.addEventListener("click", () => { if (atual>0){ atual--; salvar(); render(); } });
+
+render();
+</script>
+</body>
+</html>
