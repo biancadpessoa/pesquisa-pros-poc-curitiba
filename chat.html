@@ -94,7 +94,7 @@ button:focus-visible,textarea:focus-visible,input:focus-visible{outline:3px soli
 /* ============ CONFIGURAÇÃO ============ */
 const ENDPOINT = "https://script.google.com/macros/s/AKfycbwbBrVkpjNnxcjdF0pR218bwZHqLpy7fVDZqoRmFgvpxK_2n2zKH32JjnRqeHyXB6fc/exec";
 const MARCA = "Madeira Serviços";
-const VERSAO = "2026-10-14.3";   // v3: sem "(marque todas)", sem P28 e P40
+const VERSAO = "2026-10-16";   // v4: telefone, colete no início, P09b, sem P14, P48 e P49 no lugar de P17 e P32, P50, salvamento parcial
 const FORMATO = "chat";
 /* ====================================== */
 const M = s => s.replace(/\{M\}/g, MARCA);
@@ -108,10 +108,23 @@ const SECOES = [
       "Depois da pesquisa, vamos contar para todos os profissionais o que descobrimos e o que vamos mudar."
     ],
     qs:[
-      {id:"P0a", n:"", text:"Código do profissional", type:"code", req:true,
-        help:"Digite o seu código de profissional."},
+      {id:"P0c", n:"", text:"Qual o seu telefone de cadastro na {M}?", type:"phone", req:true,
+        help:"Com DDD, o mesmo número cadastrado na {M}."},
       {id:"P0b", n:"", text:"Você concorda em participar desta pesquisa e que suas respostas sejam usadas de forma agrupada para melhorar a plataforma?",
         type:"single", req:true, options:["Sim, concordo","Não concordo"]}
+    ]},
+  { letra:"", titulo:"Colete", desc:"", qs:[
+      {id:"P45", n:45, text:"Você usaria o colete durante os serviços?", type:"single", req:true,
+        help:"Estamos preparando um colete de identificação da {M} para os profissionais. Com ele, o cliente reconhece na hora quem está chegando para o serviço, o que dá mais segurança e confiança para os dois lados: para o cliente, na hora de abrir a porta, e para você, que chega identificado e é recebido com mais tranquilidade. É leve e vai por cima da sua roupa.",
+        options:["Sim, usaria sempre","Usaria na maioria dos serviços","Usaria, mas preferia não","Não usaria"]}
+    ]},
+  { letra:"", titulo:"Colete", desc:"", cond: R => ["Usaria, mas preferia não","Não usaria"].includes(R.P45), qs:[
+      {id:"P46", n:46, text:"O que poderia dificultar o uso do colete no dia a dia?", type:"multi", req:true, other:true, shuffle:true,
+        options:["Calor","Atrapalha para trabalhar (abaixar, carregar peças)","Também trabalho para outras empresas ou plataformas","Esquecer de levar","Não gosto da aparência"]}
+    ]},
+  { letra:"", titulo:"Tamanho", desc:"", qs:[
+      {id:"P47", n:47, text:"Qual tamanho de camiseta você usa?", type:"single", req:true, help:"Usaremos para enviar o colete no tamanho certo.",
+        options:["P","M","G","GG","XG"]}
     ]},
   { letra:"A", titulo:"Quem é você e como aprendeu", desc:"Sobre sua trajetória no ofício.", qs:[
       {id:"P01", n:1, text:"Qual sua faixa de idade?", type:"single", req:true, options:["18–24","25–34","35–44","45–54","55+"]},
@@ -137,6 +150,9 @@ const SECOES = [
       {id:"P09", n:9, text:"Além da {M}, onde você pega trabalho hoje?", type:"multi", req:true, other:true,
         options:["Clientes particulares e indicação","Lojas de móveis ou varejistas","Empresas terceirizadas de montagem","Outros apps de serviço (ex.: GetNinjas)","Apps de transporte ou entrega (Uber, 99, iFood)","Emprego com carteira assinada","Nenhum, só a {M}"],
         excl:["Nenhum, só a {M}"]},
+      {id:"P09b", n:"9b", text:"Quais apps você usa para pegar trabalho?", type:"text", req:true,
+        help:"Escreva o nome dos apps, separados por vírgula.",
+        cond: R => (R.P09||[]).some(v => v.startsWith("Outros apps de serviço") || v.startsWith("Apps de transporte"))},
       {id:"P10", n:10, text:"Do total de serviços que você faz no mês, quanto vem da {M}?", type:"single", req:true,
         options:["Quase tudo (80% ou mais)","Mais da metade","Cerca de metade","Menos da metade","Muito pouco"]},
       {id:"P11", n:11, text:"Quantos dias por semana você costuma trabalhar com montagem?", type:"single", req:true, options:["1–2","3–4","5","6–7"]},
@@ -144,13 +160,12 @@ const SECOES = [
         options:["Dias úteis de manhã","Dias úteis à tarde","Sábado","Domingo e feriado"]},
       {id:"P13", n:13, text:"No fim do ano a demanda aumenta. Você teria interesse em pegar serviços:", type:"multi", req:true,
         options:["Aos domingos","Em feriados","À noite, até 20h","Não tenho interesse"], excl:["Não tenho interesse"]},
-      {id:"P14", n:14, text:"Num dia bom, quantos serviços de montagem você consegue fazer?", type:"single", req:true, options:["1","2","3","4","5 ou mais"]},
       {id:"P15", n:15, text:"Hoje, a plataforma oferece volume de serviços suficiente para você?", type:"single", req:true,
         options:["Mais do que consigo fazer","Suficiente","Menos do que eu gostaria","Muito menos"]},
       {id:"P16", n:16, text:"Quando você recusa ou deixa passar um serviço da {M}, qual o principal motivo? (até 3)", type:"multi", req:true, other:true, max:3, shuffle:true,
         options:["Longe demais","Valor baixo","Horário não encaixa","Móvel complexo demais","Já tenho agenda em outro lugar","Não vi a oferta a tempo","Falta ferramenta ou ajudante"]},
-      {id:"P17", n:17, text:"Se a {M} garantisse um volume mínimo de serviços por semana perto de você, você trabalharia só ou principalmente com a {M}?", type:"single", req:true,
-        options:["Sim","Talvez, dependendo do valor","Não"]}
+      {id:"P48", n:48, text:"Se a {M} garantisse oferta abundante de serviços, quanto você precisaria faturar por mês para nos considerar como a sua principal fonte de renda?", type:"single", req:false,
+        options:["Até R$ 2 mil","R$ 2–4 mil","R$ 4–6 mil","R$ 6–9 mil","Mais de R$ 9 mil","Prefiro não dizer"]}
     ]},
   { letra:"C", titulo:"Deslocamento", desc:"Sobre como você chega até os serviços.", qs:[
       {id:"P18", n:18, text:"Como você se desloca até os serviços? (principal)", type:"single", req:true, other:true,
@@ -168,7 +183,8 @@ const SECOES = [
     ]},
   { letra:"D", titulo:"Ferramentas e forma de trabalho", desc:"Sobre o que você leva para o serviço.", qs:[
       {id:"P24", n:24, text:"Quais ferramentas te acompanham no dia a dia?", type:"multi", req:true, other:true,
-        options:["Parafusadeira","Furadeira de impacto","Nível a laser","Detector de cano e fiação","Escada","Serra ou tico-tico","Kit de brocas para alvenaria e porcelanato","Suporte telescópico (terceira mão)","Sargento angular ou equivalente","Aspirador portátil"]},
+        options:["Parafusadeira","Furadeira de impacto","Nível a laser","Detector de cano e fiação","Escada","Serra ou tico-tico","Kit de brocas para alvenaria e porcelanato","Sargento angular ou equivalente","Aspirador portátil"]},
+      {id:"P50", n:50, text:"Você usa levantador telescópico (braço de elevação / terceira mão)?", type:"single", req:true, options:["Sim","Não"]},
       {id:"P25", n:25, text:"Você leva materiais de reposição para os serviços?", type:"multi", req:true,
         options:["Buchas e parafusos extras, inclusive para drywall","Massa ou caneta para retoque de riscos","Cola","Dobradiças ou corrediças","Não levo"], excl:["Não levo"]},
       {id:"P26", n:26, text:"Quais EPIs você usa nos serviços?", type:"multi", req:true,
@@ -183,7 +199,7 @@ const SECOES = [
         options:["Até R$ 2 mil","R$ 2–4 mil","R$ 4–6 mil","R$ 6–9 mil","Mais de R$ 9 mil","Prefiro não dizer"]},
       {id:"P31", n:31, text:"Quanto você precisa ganhar num dia para valer a pena sair de casa?", type:"single", req:false,
         options:["Até R$ 150","R$ 150–250","R$ 250–400","Mais de R$ 400"]},
-      {id:"P32", n:32, text:"Se houvesse serviço sobrando na plataforma, quanto você gostaria de ganhar por dia?", type:"single", req:false,
+      {id:"P49", n:49, text:"Se houvesse serviço sobrando na plataforma, quanto você conseguiria ganhar, de forma realista, num dia de trabalho?", type:"single", req:false,
         options:["Até R$ 250","R$ 250–400","R$ 400–600","Mais de R$ 600"]},
       {id:"P33", n:33, text:"Comparando com suas outras fontes, a {M} paga:", type:"single", req:false,
         options:["Melhor","Igual","Pior","Só trabalho com a {M}"]},
@@ -208,42 +224,32 @@ const SECOES = [
       {id:"P42", n:42, text:"Nos próximos 12 meses, você pretende:", type:"single", req:true,
         options:["Trabalhar mais com montagem","Manter como está","Montar equipe ou empresa","Diminuir ou mudar de área"]},
       {id:"P43", n:43, text:"O que faria você deixar de trabalhar com a {M}?", type:"text", req:false, help:OPC},
-      {id:"P44", n:44, text:"Se você fosse o dono da {M}, o que mudaria primeiro?", type:"text", req:false, help:OPC},
-      {id:"P45", n:45, text:"Você usaria o colete durante os serviços?", type:"single", req:true,
-        help:"Estamos preparando um colete de identificação da {M} para os profissionais. Com ele, o cliente reconhece na hora quem está chegando para o serviço, o que dá mais segurança e confiança para os dois lados: para o cliente, na hora de abrir a porta, e para você, que chega identificado e é recebido com mais tranquilidade. É leve e vai por cima da sua roupa.",
-        options:["Sim, usaria sempre","Usaria na maioria dos serviços","Usaria, mas preferia não","Não usaria"]}
-    ]},
-  { letra:"", titulo:"Colete", desc:"", cond: R => ["Usaria, mas preferia não","Não usaria"].includes(R.P45), qs:[
-      {id:"P46", n:46, text:"O que poderia dificultar o uso do colete no dia a dia?", type:"multi", req:true, other:true, shuffle:true,
-        options:["Calor","Atrapalha para trabalhar (abaixar, carregar peças)","Também trabalho para outras empresas ou plataformas","Esquecer de levar","Não gosto da aparência"]}
-    ]},
-  { letra:"", titulo:"Tamanho", desc:"", qs:[
-      {id:"P47", n:47, text:"Qual tamanho de camiseta você usa?", type:"single", req:true, help:"Usaremos para enviar o colete no tamanho certo.",
-        options:["P","M","G","GG","XG"]}
+      {id:"P44", n:44, text:"Se você fosse o dono da {M}, o que mudaria primeiro?", type:"text", req:false, help:OPC}
     ]}
 ];
 
 /* ---------- roteiro: mesmas perguntas e textos da versão em lista ---------- */
 const intro = SECOES[0];
 const QS = SECOES.flatMap(s => s.qs);
-const P0a = QS.find(q=>q.id==="P0a"), P0b = QS.find(q=>q.id==="P0b");
+const P0c = QS.find(q=>q.id==="P0c"), P0b = QS.find(q=>q.id==="P0b");
 const PASSOS = [];
 intro.intro.forEach(t => PASSOS.push({msg:t}));
-PASSOS.push({q:P0b});            // consentimento antes do código: quem recusa sai sem informar nada
-PASSOS.push({q:P0a});
+PASSOS.push({q:P0b});            // consentimento antes do telefone: quem recusa sai sem informar nada
+PASSOS.push({q:P0c});
 SECOES.slice(1).forEach(s => {
   if (s.letra) PASSOS.push({sec:`Bloco ${s.letra} · ${M(s.titulo)}`});   // Colete e Tamanho não têm bloco nem descrição
   if (s.desc) PASSOS.push({msg:M(s.desc)});
-  s.qs.forEach(q => PASSOS.push({q, cond:s.cond}));
+  s.qs.forEach(q => PASSOS.push({q, cond: q.cond || s.cond}));
 });
-const ativa = q => { const s = SECOES.find(x => x.qs.includes(q)); return !s.cond || s.cond(R); };
+const ativa = q => { const s = SECOES.find(x => x.qs.includes(q)); return (!s.cond || s.cond(R)) && (!q.cond || q.cond(R)); };
 const TOTAL_Q = PASSOS.filter(p=>p.q).length;
 
 /* ---------- estado ---------- */
 const CHAVE = "pesq-pros-chat-" + VERSAO;
-let R = {}, ORDEM = {}, pos = 0, perguntado = -1, hist = [], inicio = Date.now(), enviado = false;
-try { const s = JSON.parse(localStorage.getItem(CHAVE)||"null"); if (s){ ({R,ORDEM,pos,perguntado,hist,inicio,enviado} = Object.assign({R:{},ORDEM:{},pos:0,perguntado:-1,hist:[],inicio:Date.now(),enviado:false}, s)); } } catch(e){}
-function salvar(){ try { localStorage.setItem(CHAVE, JSON.stringify({R,ORDEM,pos,perguntado,hist,inicio,enviado})); } catch(e){} }
+const novaSessao = () => (crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2));
+let R = {}, ORDEM = {}, pos = 0, perguntado = -1, hist = [], inicio = Date.now(), enviado = false, sessao = novaSessao();
+try { const s = JSON.parse(localStorage.getItem(CHAVE)||"null"); if (s){ ({R,ORDEM,pos,perguntado,hist,inicio,enviado,sessao} = Object.assign({R:{},ORDEM:{},pos:0,perguntado:-1,hist:[],inicio:Date.now(),enviado:false,sessao:novaSessao()}, s)); } } catch(e){}
+function salvar(){ try { localStorage.setItem(CHAVE, JSON.stringify({R,ORDEM,pos,perguntado,hist,inicio,enviado,sessao})); } catch(e){} }
 
 const chat = document.getElementById("chat"), inp = document.getElementById("inp");
 const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
@@ -293,18 +299,20 @@ function perguntar(q){
     const pular = !q.req ? `<button class="opt pular" data-pular>Prefiro pular</button>` : "";
     const dica = t => `<div class="dica" id="dica">${t}</div>`;
 
-    if (q.type==="code"){
-      inp.innerHTML = dica("Digite e toque em enviar") + `<div class="txt-row"><input class="txt-in" id="ti" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="Código do profissional"><button class="send" id="sd" aria-label="Enviar">${SVG_SEND}</button></div>`;
+    if (q.type==="phone"){
+      inp.innerHTML = dica("Digite com DDD e toque em enviar") + `<div class="txt-row"><input class="txt-in" id="ti" type="tel" inputmode="numeric" autocomplete="tel-national" placeholder="(41) 99999-9999" aria-label="Telefone com DDD"><button class="send" id="sd" aria-label="Enviar">${SVG_SEND}</button></div>`;
       const ti = document.getElementById("ti"); ti.focus();
-      const ir = () => { const v = ti.value.trim(); if (!v){ erro("Digite o seu código de profissional."); return; } res({v, show:v}); };
+      const fmt = d => d.length<=2 ? (d?`(${d}`:"") : d.length<=6 ? `(${d.slice(0,2)}) ${d.slice(2)}` : d.length<=10 ? `(${d.slice(0,2)}) ${d.slice(2,6)}-${d.slice(6)}` : `(${d.slice(0,2)}) ${d.slice(2,7)}-${d.slice(7,11)}`;
+      ti.oninput = () => { ti.value = fmt(ti.value.replace(/\D/g,"").slice(0,11)); };
+      const ir = () => { const d = ti.value.replace(/\D/g,""); if (d.length<10 || d.length>11){ erro("Confira o número: são o DDD + 8 ou 9 dígitos."); return; } res({v:d, show:fmt(d)}); };
       document.getElementById("sd").onclick = ir; ti.onkeydown = e => { if (e.key==="Enter") ir(); };
       return;
     }
     if (q.type==="text"){
-      inp.innerHTML = `<div class="txt-row"><textarea class="txt-in" id="ti" rows="1" aria-label="${esc(M(q.text))}"></textarea><button class="send" id="sd" aria-label="Enviar">${SVG_SEND}</button></div><div class="opts">${pular}</div>`;
-      const ti = document.getElementById("ti");
-      document.getElementById("sd").onclick = () => { const v=ti.value.trim(); if(!v){ res({v:"", show:"Prefiro pular"}); return;} res({v, show:v}); };
-      inp.querySelector("[data-pular]").onclick = () => res({v:"", show:"Prefiro pular"});
+      inp.innerHTML = (q.req ? dica("Escreva e toque em enviar") : "") + `<div class="txt-row"><textarea class="txt-in" id="ti" rows="1" aria-label="${esc(M(q.text))}"></textarea><button class="send" id="sd" aria-label="Enviar">${SVG_SEND}</button></div>` + (pular ? `<div class="opts">${pular}</div>` : "");
+      const ti = document.getElementById("ti"); if (q.req) ti.focus();
+      document.getElementById("sd").onclick = () => { const v=ti.value.trim(); if(!v){ if (q.req){ erro("Escreva pelo menos um nome."); return; } res({v:"", show:"Prefiro pular"}); return;} res({v, show:v}); };
+      const pj = inp.querySelector("[data-pular]"); if (pj) pj.onclick = () => res({v:"", show:"Prefiro pular"});
       return;
     }
     if (q.type==="scale"){
@@ -370,25 +378,30 @@ function perguntar(q){
 function erro(t){ const d=document.getElementById("dica"); if(d){ d.textContent=t; d.classList.add("erro"); } }
 
 /* ---------- envio (mesmo formato de linha da versão em lista + formato e tempo) ---------- */
-function montarLinha(parcial){
-  const f = [["versao",VERSAO],["formato",FORMATO],["tempo_seg",Math.round((Date.now()-inicio)/1000)],["codigo",(R.P0a||"").trim()]];
+function montarLinha(status, ultima){
+  const recusou = status==="recusou";
+  const f = [["sessao",sessao],["status",status],["passo",pos],["ultima_pergunta",ultima||""],
+             ["versao",VERSAO],["formato",FORMATO],["tempo_seg",Math.round((Date.now()-inicio)/1000)],["telefone",recusou?"":(R.P0c||"")]];
   for (const q of QS){
-    if (q.type==="code") continue;
-    if (parcial && q.id!=="P0b") continue;
+    if (q.type==="phone") continue;
+    if (recusou && q.id!=="P0b") continue;
     const v = ativa(q) ? R[q.id] : undefined;
     if (q.type==="grid"){ q.cols.forEach((c,i)=>f.push([`${q.id}_${i+1}lugar`,(v||{})[c]||""])); continue; }
     f.push([q.id, Array.isArray(v) ? v.join("; ") : (v ?? "")]);
     if (q.other) f.push([q.id+"_outro", ativa(q) ? (R[q.id+"_outro"]||"") : ""]);
   }
-  if (!parcial) f.push(["P47_colete", {P:"M",M:"G",G:"GG",GG:"XG",XG:"XGG"}[R.P47] || ""]);   // uso interno: colete = camiseta +1
+  if (!recusou) f.push(["P47_colete", {P:"M",M:"G",G:"GG",GG:"XG",XG:"XGG"}[R.P47] || ""]);   // uso interno: colete = camiseta +1
   f.push(["user_agent", navigator.userAgent]);
   return f;
 }
+const post = body => fetch(ENDPOINT, {method:"POST", mode:"no-cors", keepalive:true, headers:{"Content-Type":"text/plain;charset=utf-8"}, body});
+// Salvamento parcial: a cada resposta, atualiza a linha desta sessão na planilha (sem esperar e sem mostrar erro).
+function salvarParcial(qid){ try { post(JSON.stringify({fields: montarLinha("em andamento", qid)})).catch(()=>{}); } catch(e){} }
 async function enviar(parcial){
   inp.innerHTML = `<div class="dica">Enviando…</div>`;
-  const body = JSON.stringify({fields: montarLinha(parcial)});
+  const body = JSON.stringify({fields: montarLinha(parcial ? "recusou" : "concluída", parcial ? "P0b" : "fim")});
   try {
-    await fetch(ENDPOINT, {method:"POST", mode:"no-cors", headers:{"Content-Type":"text/plain;charset=utf-8"}, body});
+    await post(body);
     enviado = true; salvar();
     inp.innerHTML = "";
     final(parcial ? "Tudo bem, respeitamos sua decisão. Nenhuma outra informação foi coletada." : "Suas respostas vão ajudar a construir uma plataforma melhor para você.", parcial ? "Obrigado!" : "Obrigado! 🧡");
@@ -422,6 +435,7 @@ async function rodar(){
     bolha("user", esc(r.show));
     pos++; salvar();
     if (q.id==="P0b" && r.v==="Não concordo"){ progresso(); return enviar(true); }
+    if (q.id!=="P0b") salvarParcial(q.id);   // só depois do consentimento; a primeira gravação já leva o telefone
   }
   progresso();
   await botDiz("Pronto, essas eram todas as perguntas. Enviando suas respostas…");
